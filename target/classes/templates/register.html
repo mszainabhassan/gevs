@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="base::layout(~{::section})">>
+<head>
+    <meta charset="UTF-8">
+    <title>Register</title>
+
+</head>
+<section>
+    <style>
+        body {
+            background-image: url('/images/voting.png');
+            background-position: center; /* Adjust as needed */
+            background-repeat: no-repeat; /* Adjust as needed */
+        }
+    </style>
+</section>
+<body>
+<section>
+    <style>
+
+        #reader {
+            width: 400px;
+        }
+    </style>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.4/html5-qrcode.min.js" integrity="sha512-k/KAe4Yff9EUdYI5/IAHlwUswqeipP+Cp5qnrsUjTPCgl51La2/JhyyjNciztD7mWNKLSXci48m7cctATKfLlQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script>
+        var scanner;
+        // Define the functions outside of any event listeners
+        console.log("Script executed!");
+        function success(result) {
+            console.log("In success")
+            document.getElementById('uvc').value = result;
+            console.log("after uvc")
+            scanner.clear();
+            console.log("scanner clear")
+            document.getElementById('reader').remove();
+            console.log("reader clear")
+
+
+        }
+
+        function error(err) {
+            console.error(err);
+        }
+
+        function startQRCodeScan() {
+            scanner = new Html5QrcodeScanner('reader', {
+                qrbox: {
+                    width: 250,
+                    height: 250,
+                },
+                fps: 20,
+            });
+            scanner.render(success, error);
+        }
+
+    </script>
+    <div class="container p-3">
+        <div class="row">
+            <div class="col-md-6 offset-md-3">
+                <div class="card">
+                    <div class="card-header text-center fs-4">Register Page</div>
+
+                    <th:block th:if="${session.msg}">
+                        <p th:style="${session.msg == 'Successfully Registered!' ? 'color: green;' : 'color: red;'}" class="text-center fs-4">
+                            [[${session.msg}]]
+                        </p>
+                        <th:block th:text="${@sessionHelper.removeSessionAttribute()}"></th:block>
+                    </th:block>
+
+
+
+
+                    <div class="card-body">
+                        <form action="createVoter" method="post">
+                            <div class="mb-3">
+                                <label>Enter Full Name</label> <input type="text"
+                                                                      name="fullName" required class="form-control">
+                            </div>
+                            <div class="mb-3">
+                                <label>Enter Email</label> <input type="text" name="email" required
+                                                                  class="form-control">
+                            </div>
+
+                            <div class="mb-3">
+                                <label>Enter birth date</label>
+                                <input type="date" name="dob"
+                                       required th:max="${#dates.format(#dates.createNow(),'yyyy-MM-dd')}"
+                                                                    class="form-control">
+                            </div>
+                            <div class="mb-3">
+                                <label for="uvc">Enter UVC</label>
+                                <input type="text" id="uvc" name="uvc" required class="form-control" placeholder="UVC">
+                                <button type="button" id="scanButton" onclick="startQRCodeScan()" class="btn btn-primary">Scan QR Code</button>
+                                <div id="reader"></div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="constituency">Select Constituency</label>
+                                <select id="constituency" name="constituencyName" required class="form-control" >
+                                    <option value="" selected disabled>Select Constituency</option>
+                                    <option th:each="constituencyName : ${constituencies}" th:value="${constituencyName.constituencyName}"   th:text="${constituencyName.constituencyName}"></option>
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label>Enter Password</label> <input type="text"
+                                                                     name="password" required class="form-control">
+                            </div>
+                            <button class="btn btn-primary col-md-12">Register</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+
+</section>
+
+</body>
+</html>

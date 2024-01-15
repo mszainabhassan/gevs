@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <title>Election Commission Dashboard</title>
+</head>
+<section>
+    <style>
+        body {
+            background-image: url('/images/voting.png');
+            background-position: center; /* Adjust as needed */
+            background-repeat: no-repeat; /* Adjust as needed */
+        }
+    </style>
+</section>
+<body>
+
+<div class="container mt-5">
+    <div class="d-flex justify-content-between align-items-center">
+        <h1 class="text-center" style="color: white">Election Commission Dashboard</h1>
+        <a href="/logout" class="btn btn-dark">Logout</a>
+    </div>
+    <!-- Election Control Panel -->
+    <div class="card mt-4">
+        <div class="card-header">
+            Election Control Panel
+        </div>
+        <div class="card-body">
+            <button class="btn btn-success mr-2" id="startElectionBtn" onclick="startElection()">Start Election</button>
+
+            <!-- End Election Button -->
+            <button class="btn btn-danger" id="endElectionBtn" onclick="endElection()">End Election</button>
+        </div>
+    </div>
+
+    <!-- Election Conclusion -->
+    <div class="card mt-4">
+        <div class="card-header">
+            Election Conclusion
+        </div>
+        <div class="card-body">
+            <!-- Display Election Conclusion Message Here -->
+            <p id="electionConclusionMsg"> No Election</p>
+        </div>
+    </div>
+
+    <!-- Real-time Election Results -->
+    <div class="card mt-4">
+        <div class="card-header">
+            Real-time Election Results
+        </div>
+        <div class="card-body" >
+            <!-- Display Real-time Results Here -->
+            <table class="table table-bordered">
+                <thead>
+                <tr>
+                    <th>Constituency</th>
+                    <th>Party</th>
+                    <th>Candidate</th>
+                    <th>Vote Count</th>
+                </tr>
+                </thead>
+                <tbody id="realTimeResultsTable">
+                                <tr th:each="candidate : ${candidates}">
+                                    <td th:text="${candidate.constituency.constituencyName}"></td>
+                                    <td th:text="${candidate.party.party}"></td>
+                                    <td th:text="${candidate.candidate}"></td>
+                                    <td th:text="${candidate.voteCount}"></td>
+                                </tr>
+                                </tbody>
+            </table>
+        </div>
+    </div>
+
+
+
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+
+
+<script>
+
+    // Variable to track the election status
+    var electionStarted;
+
+    // Function to get election data and update buttons
+    function getElectionDataAndUpdateButtons() {
+        $.ajax({
+            url: "/gevs/getElectionStatus",
+            type: "GET",
+            success: function (election) {
+                console.log(election);
+                electionStarted = election.isStarted;
+                $("#electionConclusionMsg").text("Election Result: "+election.result+"!")
+                console.log(electionStarted)
+                // Enable or disable buttons based on election status
+                if (electionStarted) {
+                    $("#startElectionBtn").prop("disabled", true);
+                    $("#endElectionBtn").prop("disabled", false);
+                } else {
+                    $("#startElectionBtn").prop("disabled", false);
+                    $("#endElectionBtn").prop("disabled", true);
+                }
+            },
+            error: function () {
+                console.error("Error getting election status");
+            }
+        });
+    }
+
+    // Call the function and set the electionStarted variable
+    getElectionDataAndUpdateButtons();
+
+    function resetVoteCount(){
+        $.ajax({url:"/gevs/resetVoterCount",
+            type:"PUT",
+            success: function (election) {
+                console.log(election);
+                electionStarted = election.isStarted;
+                console.log(electionStarted)
+                $("#electionConclusionMsg").text("Election Result: "+election.result+"!")
+            },
+            error: function () {
+                console.error("Error reseting votecount");
+            }
+        });
+
+    }
+
+    // Function to start the election
+    function startElection() {
+        if (!electionStarted) {
+            resetVoteCount();
+            alert("Election Started!");
+            // Disable Start Election button and enable End Election button
+            $("#startElectionBtn").prop("disabled", true);
+            $("#endElectionBtn").prop("disabled", false);
+        } else {
+            alert("Election has already started.");
+        }
+    }
+
+    function updateElectionStatusDatabase(){
+        $.ajax({url:"/gevs/updateElection",
+            type:"GET",
+            success: function (election) {
+                console.log(election);
+                electionStarted = election.IsStarted;
+                console.log("IN updateElectionStatusDatabase: "+ electionStarted)
+                },
+            error: function () {
+                console.error("Error updating election");
+            }
+        });
+
+    }
+    function updateElectionResultStatusDatabase(result){
+        $.ajax({url:"/gevs/updateElectionResult/"+result,
+            type:"GET",
+            success: function (election) {
+                console.log(election);
+                $("#electionConclusionMsg").text("Winner of Election Result: "+election.result)
+            },
+            error: function () {
+                console.error("Error updating election result");
+            }
+        });
+
+    }
+
+    // Function to end the election
+    function endElection() {
+        console.log("In end: "+electionStarted)
+        if (electionStarted) {
+            // Enable Start Election button and disable End Election button
+            $("#startElectionBtn").prop("disabled", false);
+            $("#endElectionBtn").prop("disabled", true);
+            updateElectionStatusDatabase();
+             electionStarted = false;
+            $.ajax({
+                url: "/gevs/result",
+                type: "GET",
+                success: function (result) {
+                    console.log("Received data:", result);
+                    console.log(result.winner)
+                    updateElectionResultStatusDatabase(result.winner)
+
+
+                },
+                error: function () {
+                    console.error("Error fetching result");
+                }
+            });
+        } else {
+            alert("No election is currently running.");
+        }
+    }
+
+    // Sample JavaScript (Replace with Your Logic)
+    $(document).ready(function () {
+        // Function to fetch real-time results and update the table
+        function fetchRealTimeResults() {
+            $.ajax({
+                url: "/gevs/real-time-results",
+                type: "GET",
+                success: function (candidates) {
+                    console.log("Received data:", candidates);
+                    // Update the table with the new data
+                    updateTable(candidates);
+
+                    // Schedule the next update after a certain interval (e.g., 5 seconds)
+                    setTimeout(fetchRealTimeResults, 5000);
+                },
+                error: function () {
+                    console.error("Error fetching real-time results");
+                }
+            });
+        }
+
+        // Function to update the table with new data
+        function updateTable(candidates) {
+            console.log("In updateTable:", candidates);
+
+            // Clear the existing table rows
+            $("#realTimeResultsTable").empty();
+
+            // Append the new data to the table
+            candidates.forEach(function (candidate) {
+                var row = "<tr>" +
+                    "<td>" + candidate.constituency.constituencyName + "</td>" +
+                    "<td>" + candidate.party.party + "</td>" +
+                    "<td>" + candidate.candidate + "</td>" +
+                    "<td>" + candidate.voteCount + "</td>" +
+                    "</tr>";
+
+                $("#realTimeResultsTable").append(row);
+            });
+
+            // Log the updated table content
+            console.log("Updated table content:", $("#realTimeResultsTable").html());
+        }
+
+        // Start fetching real-time results when the page loads
+        fetchRealTimeResults();
+    });
+</script>
+
+
+</body>
+
+</html>
+

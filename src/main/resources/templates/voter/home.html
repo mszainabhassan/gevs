@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <title>GEVS Voting System</title>
+</head>
+<section>
+    <style>
+        body {
+            background-image: url('/images/voting.png');
+            background-position: center; /* Adjust as needed */
+            background-repeat: no-repeat; /* Adjust as needed */
+        }
+    </style>
+</section>
+<body>
+
+<div class="container mt-5" th:data-has-voted="${voter.isVoted}">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1 class="mx-auto">Voter Dashboard</h1>
+        <a href="/logout" class="btn btn-dark">Logout</a>
+    </div>
+    <div class="text-center">
+        <h1>Welcome to GEVS [[${voter.fullName}]]!</h1>
+        <p>Please provide your vote by selecting a candidate:</p>
+    </div>
+
+    <!-- Voter's constituency information -->
+    <div class="text-center mb-3">
+        <p>Your Constituency: [[${voter.constituency.constituencyName}]]</p>
+    </div>
+
+    <!-- Candidate cards -->
+    <!-- Candidate cards -->
+    <div class="row justify-content-center" th:if="${electionStarted==true}">
+        <div class="col-md-2" th:each="candidate : ${candidates}">
+            <div th:switch="${candidate.party.party}">
+                <div th:case="'Blue Party'" class="card" th:style="'background-color:cornflowerblue'">
+                    <!-- Content for party 1 -->
+                    <img th:src="@{'/images/candidate.jpg'}" class="card-img-top" alt="Candidate Image">
+                    <div class="card-body">
+                        <h5 class="card-title" th:text="${candidate.candidate}"></h5>
+                        <!-- Pass candidate ID to the vote button data attribute -->
+                        <button class="btn btn-primary vote-btn" th:data-candidate-id="${candidate.candidateId}">Vote</button>
+                    </div>
+                </div>
+                <div th:case="'Red Party'" class="card" th:style="'background-color:indianred'">
+                    <!-- Content for party 2 -->
+                    <img th:src="@{'/images/candidate.jpg'}" class="card-img-top" alt="Candidate Image">
+                    <div class="card-body">
+                        <h5 class="card-title" th:text="${candidate.candidate}"></h5>
+                        <!-- Pass candidate ID to the vote button data attribute -->
+                        <button class="btn btn-primary vote-btn" th:data-candidate-id="${candidate.candidateId}">Vote</button>
+                    </div>
+                </div>
+                <div th:case="'Yellow Party'" class="card" th:style="'background-color:yellow'">
+                    <!-- Content for party 3 -->
+                    <img th:src="@{'/images/candidate.jpg'}" class="card-img-top" alt="Candidate Image">
+                    <div class="card-body">
+                        <h5 class="card-title" th:text="${candidate.candidate}"></h5>
+                        <!-- Pass candidate ID to the vote button data attribute -->
+                        <button class="btn btn-primary vote-btn" th:data-candidate-id="${candidate.candidateId}">Vote</button>
+                    </div>
+                </div>
+                <div th:case="*" class="card" th:style="'background-color:orange'">
+                    <!-- Default content for other parties -->
+                    <img th:src="@{'/images/candidate.jpg'}" class="card-img-top" alt="Candidate Image">
+                    <div class="card-body">
+                        <h5 class="card-title" th:text="${candidate.candidate}"></h5>
+                        <!-- Pass candidate ID to the vote button data attribute -->
+                        <button class="btn btn-primary vote-btn" th:data-candidate-id="${candidate.candidateId}">Vote</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+    <div class="text-center mb-3" th:unless="${electionStarted==true}">
+        <p>Currently no election is started. You will see the candidates once the Election Commission starts the election.</p>
+    </div>
+</div>
+</div>
+
+
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+
+<script>
+
+    // JavaScript code for handling voting buttons
+    $(document).ready(function () {
+        console.log([[${electionStarted}]])
+        // Check if the voter has already voted
+        var hasVoted = $(".container").data("has-voted");
+        console.log("Voter has voted: "+hasVoted)
+        // Disable all vote buttons if the voter has already voted
+        if (hasVoted) {
+            $(".vote-btn").attr("disabled", true);
+            alert("You have already voted!");
+        }
+
+        // Attach click event to vote buttons
+        $(".vote-btn").on("click", function () {
+            // Get the selected candidate ID
+            var candidateId = $(this).data("candidate-id");
+
+            // Prompt confirmation dialog
+            var confirmVote = confirm("Are you sure you want to vote for this candidate?\n you will not be able to change your vote later!");
+            // Check user's response
+            if (confirmVote) {
+                // Send the vote to the server using AJAX
+                $.ajax({
+                    type: "PUT",
+                    url: "/voter/vote/" + candidateId,
+                    success: function (response) {
+                        // Handle the server response
+                        alert("Thank you for your vote! You voted for Candidate " + candidateId);
+
+                        // Disable all vote buttons after voting
+                        $(".vote-btn").attr("disabled", true);
+                    },
+                    error: function () {
+                        // Handle errors, e.g., show an error message
+                        alert("Error occurred while processing your vote. Please try again.");
+                    }
+                });
+            }
+        });
+    });
+</script>
+
+
+
+</body>
+</html>
